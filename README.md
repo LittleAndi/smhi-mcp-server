@@ -11,10 +11,11 @@ MCP server for Swedish Meteorological and Hydrological Institute (SMHI) weather 
 - **get_hourly_forecast** - Next 1-48 hours hourly
 - **get_daily_summary** - Daily high/low for up to 10 days
 - **get_fire_risk** - Wildfire/forest fire risk forecast (Canadian FWI system)
+- **get_radar_image** - Latest observed precipitation radar composite for Sweden
 
 ## Coverage
 
-Sweden, Norway, Finland, Denmark, Estonia, and parts of Latvia/Lithuania.
+Sweden, Norway, Finland, Denmark, Estonia, and parts of Latvia/Lithuania. `get_radar_image` is Sweden-only.
 
 ## Installation
 
@@ -68,6 +69,13 @@ Input: { "latitude": 59.9139, "longitude": 10.7522, "hours": 12 }
 ```
 Tool: get_fire_risk
 Input: { "latitude": 58.5877, "longitude": 16.1924, "period": "daily" }
+```
+
+### See what's actually raining right now
+
+```
+Tool: get_radar_image
+Input: {}
 ```
 
 ## API Reference
@@ -125,6 +133,14 @@ Get wildfire/forest fire risk forecast, based on the Canadian Fire Weather Index
 | period | string | No | daily | `daily` (~6 days ahead, afternoon fire risk) or `hourly` (next 48 hours) |
 
 Returns per time step: fire risk class (1-6) and description, the underlying FWI/ISI/BUI/FFMC/DMC/DC indices, grass fire risk class, forest dryness class (`daily` only), temperature/wind/humidity, and multi-day precipitation sums.
+
+### get_radar_image
+
+Get the latest Swedish precipitation radar composite (mosaic of all Swedish radar stations, SMHI's radar `comp` product), updated roughly every 5 minutes. Unlike the forecast tools above, this reflects observed precipitation happening right now rather than a prediction.
+
+No input parameters.
+
+Returns the radar image (PNG) plus `area`, `product`, and `validTime`/`updated` timestamps. Coverage: Sweden only.
 
 ## Development
 

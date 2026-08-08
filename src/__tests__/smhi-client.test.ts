@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchForecast, getCurrentWeather, getHourlyForecast, getDailySummary, fetchFireRisk, getFireRisk, SMHIClientError } from '../smhi-client.js';
+import { fetchForecast, getCurrentWeather, getHourlyForecast, getDailySummary, fetchFireRisk, getFireRisk, fetchRadarComposite, SMHIClientError } from '../smhi-client.js';
 import forecastFixture from './fixtures/forecast-response.json';
 import fireRiskFixture from './fixtures/fire-risk-response.json';
+import radarCompFixture from './fixtures/radar-comp-response.json';
 
 describe('SMHI Client', () => {
   beforeEach(() => {
@@ -199,6 +200,57 @@ describe('SMHI Client', () => {
       expect(result[1].fireRiskDescription).toBe('Extremely high risk');
       expect(result[1].grassFireClass).toBe(4);
       expect(result[1].grassFireDescription).toBe('Moderate');
+    });
+  });
+
+  describe('fetchRadarComposite', () => {
+    it('fetches metadata then downloads the latest PNG', async () => {
+      const fakePngBytes = new Uint8Array([137, 80, 78, 71]).buffer;
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(radarCompFixture),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          arrayBuffer: () => Promise.resolve(fakePngBytes),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchRadarComposite();
+
+      expect(mockFetch).toHaveBeenNthCalledWith(1, expect.stringContaining('area/sweden/product/comp.json'));
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        'https://opendata-download-radar.smhi.se/api/version/latest/area/sweden/product/comp/latest.png'
+      );
+      expect(result.area).toBe('sweden');
+      expect(result.product).toBe('comp');
+      expect(result.validTime).toBe('2026-08-08 15:50');
+      expect(result.mimeType).toBe('image/png');
+      expect(result.imageBase64).toBe(Buffer.from(fakePngBytes).toString('base64'));
+    });
+
+    it('throws when metadata fetch fails', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(fetchRadarComposite()).rejects.toThrow('SMHI radar API error: 503');
+    });
+
+    it('throws when no PNG file is listed', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ ...radarCompFixture, lastFiles: [] }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(fetchRadarComposite()).rejects.toThrow('No radar composite image currently available');
     });
   });
 });

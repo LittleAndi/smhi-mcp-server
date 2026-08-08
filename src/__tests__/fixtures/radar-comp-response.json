@@ -1,0 +1,36 @@
+{
+  "key": "comp",
+  "updated": "2026-08-08T15:55:55Z",
+  "timeZone": "UTC",
+  "lastFiles": [
+    {
+      "key": "radar_2608081550",
+      "valid": "2026-08-08 15:50",
+      "updated": "2026-08-08T15:51:32Z",
+      "formats": [
+        {
+          "key": "png",
+          "updated": "2026-08-08T15:51:32Z",
+          "link": "https://opendata-download-radar.smhi.se/api/version/latest/area/sweden/product/comp/latest.png"
+        },
+        {
+          "key": "tif",
+          "updated": "2026-08-08T15:51:32Z",
+          "link": "https://opendata-download-radar.smhi.se/api/version/latest/area/sweden/product/comp/latest.tif"
+        }
+      ]
+    },
+    {
+      "key": "radar_sweden_comp_202608081555",
+      "valid": "2026-08-08 15:55",
+      "updated": "2026-08-08T15:55:55Z",
+      "formats": [
+        {
+          "key": "h5",
+          "updated": "2026-08-08T15:55:55Z",
+          "link": "https://opendata-download-radar.smhi.se/api/version/latest/area/sweden/product/comp/latest.h5"
+        }
+      ]
+    }
+  ]
+}

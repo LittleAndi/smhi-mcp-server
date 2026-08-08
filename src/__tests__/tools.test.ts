@@ -4,8 +4,10 @@ import { getCurrentWeatherTool, getCurrentWeatherSchema } from '../tools/get-cur
 import { getHourlyForecastTool, getHourlyForecastSchema } from '../tools/get-hourly-forecast.js';
 import { getDailySummaryTool, getDailySummarySchema } from '../tools/get-daily-summary.js';
 import { getFireRiskTool, getFireRiskSchema } from '../tools/get-fire-risk.js';
+import { getRadarImageTool, getRadarImageSchema } from '../tools/get-radar-image.js';
 import forecastFixture from './fixtures/forecast-response.json';
 import fireRiskFixture from './fixtures/fire-risk-response.json';
+import radarCompFixture from './fixtures/radar-comp-response.json';
 
 describe('MCP Tools', () => {
   beforeEach(() => {
@@ -124,6 +126,37 @@ describe('MCP Tools', () => {
       expect(result.period).toBe('daily');
       expect(result.forecast).toBeInstanceOf(Array);
       expect(result.forecast[0].fireRiskDescription).toBe('Very high risk');
+    });
+  });
+
+  describe('getRadarImageTool', () => {
+    beforeEach(() => {
+      const fakePngBytes = new Uint8Array([137, 80, 78, 71]).buffer;
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(radarCompFixture),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          arrayBuffer: () => Promise.resolve(fakePngBytes),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+    });
+
+    it('validates input schema', () => {
+      expect(() => getRadarImageSchema.parse({})).not.toThrow();
+    });
+
+    it('returns the latest radar composite image', async () => {
+      const result = await getRadarImageTool({});
+
+      expect(result.area).toBe('sweden');
+      expect(result.product).toBe('comp');
+      expect(result.validTime).toBe('2026-08-08 15:50');
+      expect(result.mimeType).toBe('image/png');
+      expect(result.imageBase64.length).toBeGreaterThan(0);
     });
   });
 });
