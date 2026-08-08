@@ -5,9 +5,11 @@ import { getHourlyForecastTool, getHourlyForecastSchema } from '../tools/get-hou
 import { getDailySummaryTool, getDailySummarySchema } from '../tools/get-daily-summary.js';
 import { getFireRiskTool, getFireRiskSchema } from '../tools/get-fire-risk.js';
 import { getRadarImageTool, getRadarImageSchema } from '../tools/get-radar-image.js';
+import { getWeatherWarningsTool, getWeatherWarningsSchema } from '../tools/get-weather-warnings.js';
 import forecastFixture from './fixtures/forecast-response.json';
 import fireRiskFixture from './fixtures/fire-risk-response.json';
 import radarCompFixture from './fixtures/radar-comp-response.json';
+import warningsFixture from './fixtures/warnings-response.json';
 
 describe('MCP Tools', () => {
   beforeEach(() => {
@@ -157,6 +159,40 @@ describe('MCP Tools', () => {
       expect(result.validTime).toBe('2026-08-08 15:50');
       expect(result.mimeType).toBe('image/png');
       expect(result.imageBase64.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('getWeatherWarningsTool', () => {
+    beforeEach(() => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(warningsFixture),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+    });
+
+    it('validates input schema with defaults', () => {
+      const parsed = getWeatherWarningsSchema.parse({});
+      expect(parsed.language).toBe('en');
+    });
+
+    it('rejects an invalid minSeverity', () => {
+      expect(() => getWeatherWarningsSchema.parse({ minSeverity: 'PURPLE' })).toThrow();
+    });
+
+    it('returns active warnings with a count', async () => {
+      const result = await getWeatherWarningsTool({ language: 'en' });
+
+      expect(result.count).toBe(3);
+      expect(result.warnings).toBeInstanceOf(Array);
+      expect(result.warnings[0].event).toBe('Wind');
+    });
+
+    it('applies minSeverity and county filters', async () => {
+      const result = await getWeatherWarningsTool({ language: 'en', minSeverity: 'MESSAGE', county: 'Gotland' });
+
+      expect(result.count).toBe(1);
+      expect(result.warnings[0].areaName).toBe('Gotland');
     });
   });
 });
