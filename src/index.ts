@@ -27,6 +27,8 @@ import {
   getRadarImageSchema,
   getWeatherWarningsTool,
   getWeatherWarningsSchema,
+  getWeatherAnalysisTool,
+  getWeatherAnalysisSchema,
 } from './tools/index.js';
 import { SMHIClientError } from './smhi-client.js';
 
@@ -290,6 +292,48 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
         },
       },
+      {
+        name: 'get_weather_analysis',
+        description:
+          `Get the past ~24 hours of gridded meteorological analysis for a location, from SMHI's Mesan2gv3 API — a ` +
+          `"best current estimate" of conditions (observations blended with a short-range model on a ~2.5 km grid), ` +
+          `not a forecast. Use this for nowcasting ("what's actually happening right now" at a point without a ` +
+          `nearby observation station), verifying how a past forecast turned out, or "what was the weather really ` +
+          `like" lookups; use the forecast tools instead for future conditions. Returns hourly entries (most recent ` +
+          `first) with temperature (°C, plus min/max at some hours), dew point, wet-bulb temperature, wind (m/s), ` +
+          `pressure (hPa, sea-level and station), visibility (km), cloud cover layers and base/top altitude (%, m), ` +
+          `precipitation over the last 1/3/12/24h (mm, later windows only populated at some hours), snow depth ` +
+          `change (cm), and a human-readable weather description. ${ERROR_NOTE} ${COVERAGE_NOTE}`,
+        annotations: {
+          title: 'Get Meteorological Analysis',
+          ...READONLY_ANNOTATIONS,
+        },
+        inputSchema: {
+          type: 'object',
+          properties: {
+            latitude: {
+              type: 'number',
+              description: 'Latitude of the location (-90 to 90)',
+              minimum: -90,
+              maximum: 90,
+            },
+            longitude: {
+              type: 'number',
+              description: 'Longitude of the location (-180 to 180)',
+              minimum: -180,
+              maximum: 180,
+            },
+            hours: {
+              type: 'number',
+              description: 'Number of most recent hours to return (1-24, default 24)',
+              minimum: 1,
+              maximum: 24,
+              default: 24,
+            },
+          },
+          required: ['latitude', 'longitude'],
+        },
+      },
     ],
   };
 });
@@ -361,6 +405,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'get_weather_warnings': {
         const input = getWeatherWarningsSchema.parse(args ?? {});
         const result = await getWeatherWarningsTool(input);
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
+      case 'get_weather_analysis': {
+        const input = getWeatherAnalysisSchema.parse(args);
+        const result = await getWeatherAnalysisTool(input);
         return {
           content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };

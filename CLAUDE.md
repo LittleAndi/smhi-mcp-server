@@ -36,8 +36,9 @@ CI (`.github/workflows/ci.yml`) runs on Node 20.x/22.x/24.x: `npm ci`, `npm run 
 
 Each tool module is a thin adapter: input validation lives in the zod schema (`src/index.ts` re-validates with the same schema before dispatch), and all HTTP/data-shaping logic lives in `smhi-client.ts`. Tool handlers just call the client and wrap the result with `location`/`period` metadata.
 
-**Two independent SMHI APIs are wired up:**
+**Several independent SMHI APIs are wired up:**
 - `snow1g` (forecast) and `fwif1g` (fire weather index) both live under `opendata-download-metfcst.smhi.se`, share `validateCoordinates`, and return 404 for out-of-coverage points — mapped to a descriptive `SMHIClientError`.
+- `mesan2g` (Mesan2gv3 meteorological analysis, `get_weather_analysis`) lives under `opendata-download-metanalys.smhi.se` and follows the same point-query/`validateCoordinates`/404-mapping shape as `snow1g`/`fwif1g`, but is a gridded "best current estimate" analysis (observations blended with a short-range model) covering the past ~24 hours, newest entry first — not a forward-looking forecast. Several fields (`air_temperature_min/max`, the 3/12/24h precipitation and snow-change windows) are only populated at some hours, so they're optional in `MesanTimeSeriesData`.
 - Radar (`opendata-download-radar.smhi.se`) is a two-step fetch: get the product metadata JSON to find the latest PNG link, then fetch and base64-encode the image. No coordinates involved (Sweden-only, no input params).
 
 **Error handling:** all client functions throw `SMHIClientError` (with optional `statusCode`) on network failure, non-OK responses, or missing data. `src/index.ts`'s tool-call handler catches everything and returns `{ content: [...], isError: true }` rather than throwing across the MCP boundary — never let an exception escape the `CallToolRequestSchema` handler.
@@ -46,7 +47,7 @@ Each tool module is a thin adapter: input validation lives in the zod schema (`s
 
 **Units** (consistent across tools): temperature °C, wind speed m/s, pressure hPa, precipitation mm, humidity/cloud-cover/probabilities %. FWI/ISI/BUI/FFMC/DMC/DC fire indices are unitless.
 
-**Coverage:** Sweden, Norway, Finland, Denmark, Estonia, parts of Latvia/Lithuania for forecast and fire-risk tools; `get_radar_image` is Sweden-only.
+**Coverage:** Sweden, Norway, Finland, Denmark, Estonia, parts of Latvia/Lithuania for forecast, fire-risk, and weather-analysis tools; `get_radar_image` is Sweden-only.
 
 ## Release process
 

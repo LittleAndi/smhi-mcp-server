@@ -22,6 +22,9 @@ import type {
   WeatherWarning,
   WarningSeverity,
   WarningLanguage,
+  MesanResponse,
+  MesanTimeSeries,
+  WeatherAnalysis,
 } from './types.js';
 import { getWeatherDescription } from './weather-symbols.js';
 import { getFireRiskClass, getGrassFireClass, getForestDrynessClass } from './fire-risk-classes.js';
@@ -32,6 +35,9 @@ const FIRE_RISK_CATEGORY = 'fwif1g';
 const VERSION = '1';
 const RADAR_BASE_URL = 'https://opendata-download-radar.smhi.se/api/version/latest';
 const WARNINGS_URL = 'https://opendata-download-warnings.smhi.se/ibww/api/version/1/warning.json';
+const ANALYSIS_BASE_URL = 'https://opendata-download-metanalys.smhi.se/api';
+const ANALYSIS_CATEGORY = 'mesan2g';
+const ANALYSIS_VERSION = '3';
 
 const SEVERITY_RANK: Record<WarningSeverity, number> = {
   MESSAGE: 0,
@@ -464,4 +470,98 @@ export async function getWeatherWarnings(
     }
     return true;
   });
+}
+
+/**
+ * Converts a MESAN2G time series entry to WeatherAnalysis format
+ */
+function timeSeriesToWeatherAnalysis(ts: MesanTimeSeries): WeatherAnalysis {
+  const d = ts.data;
+
+  return {
+    temperature: d.air_temperature,
+    temperatureMin: d.air_temperature_min,
+    temperatureMax: d.air_temperature_max,
+    dewPoint: d.dew_point_temperature,
+    wetBulbTemperature: d.wet_bulb_temperature,
+    humidity: d.relative_humidity,
+    windSpeed: d.wind_speed,
+    windDirection: d.wind_from_direction,
+    windGust: d.wind_speed_of_gust,
+    pressure: d.air_pressure_at_mean_sea_level,
+    pressureAtStation: d.air_pressure,
+    visibility: d.visibility_in_air,
+    cloudCover: d.cloud_area_fraction,
+    lowCloudCover: d.low_type_cloud_area_fraction,
+    mediumCloudCover: d.medium_type_cloud_area_fraction,
+    highCloudCover: d.high_type_cloud_area_fraction,
+    cloudBaseAltitude: d.cloud_base_altitude,
+    cloudTopAltitude: d.cloud_top_altitude,
+    precipitationLast1h: d.precipitation_amount_last_1_hours,
+    precipitationLast3h: d.precipitation_amount_last_3_hours,
+    precipitationLast12h: d.precipitation_amount_last_12_hours,
+    precipitationLast24h: d.precipitation_amount_last_24_hours,
+    precipitationCategory: d.predominant_precipitation_type_at_surface,
+    snowDepthChange1h: d.change_over_time_in_surface_snow_amount_1_hours,
+    weatherSymbol: d.symbol_code,
+    weatherDescription: getWeatherDescription(d.symbol_code),
+    validTime: ts.time,
+  };
+}
+
+/**
+ * Fetches the raw meteorological analysis data from SMHI's MESAN2G (Mesan2gv3) API.
+ * Returns the past ~24 hours of gridded "best current estimate" conditions, newest first.
+ */
+export async function fetchWeatherAnalysis(latitude: number, longitude: number): Promise<MesanResponse> {
+  validateCoordinates(latitude, longitude);
+
+  const lon = longitude.toFixed(6);
+  const lat = latitude.toFixed(6);
+
+  const url = `${ANALYSIS_BASE_URL}/category/${ANALYSIS_CATEGORY}/version/${ANALYSIS_VERSION}/geotype/point/lon/${lon}/lat/${lat}/data.json`;
+
+  let response: Response;
+  try {
+    response = await fetch(url);
+  } catch (error) {
+    throw new SMHIClientError(
+      `Network error fetching weather analysis: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new SMHIClientError(
+        `Location (${latitude}, ${longitude}) is outside SMHI meteorological analysis coverage area. ` +
+        'SMHI covers Sweden, Norway, Finland, Denmark, Estonia, and parts of Latvia/Lithuania.',
+        404
+      );
+    }
+    throw new SMHIClientError(
+      `SMHI API error: ${response.status} ${response.statusText}`,
+      response.status
+    );
+  }
+
+  return response.json() as Promise<MesanResponse>;
+}
+
+/**
+ * Gets the past ~24 hours of meteorological analysis (gridded "best current estimate"
+ * conditions), most recent hour first. `hours` caps how many of the most recent entries
+ * are returned.
+ */
+export async function getWeatherAnalysis(
+  latitude: number,
+  longitude: number,
+  hours: number = 24
+): Promise<WeatherAnalysis[]> {
+  const analysis = await fetchWeatherAnalysis(latitude, longitude);
+
+  if (!analysis.timeSeries || analysis.timeSeries.length === 0) {
+    throw new SMHIClientError('No weather analysis data available');
+  }
+
+  return analysis.timeSeries.slice(0, hours).map(timeSeriesToWeatherAnalysis);
 }

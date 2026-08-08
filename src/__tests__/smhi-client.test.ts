@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchForecast, getCurrentWeather, getHourlyForecast, getDailySummary, fetchFireRisk, getFireRisk, fetchRadarComposite, fetchWeatherWarnings, getWeatherWarnings, SMHIClientError } from '../smhi-client.js';
+import { fetchForecast, getCurrentWeather, getHourlyForecast, getDailySummary, fetchFireRisk, getFireRisk, fetchRadarComposite, fetchWeatherWarnings, getWeatherWarnings, fetchWeatherAnalysis, getWeatherAnalysis, SMHIClientError } from '../smhi-client.js';
 import forecastFixture from './fixtures/forecast-response.json';
 import fireRiskFixture from './fixtures/fire-risk-response.json';
 import radarCompFixture from './fixtures/radar-comp-response.json';
 import warningsFixture from './fixtures/warnings-response.json';
+import weatherAnalysisFixture from './fixtures/weather-analysis-response.json';
 
 describe('SMHI Client', () => {
   beforeEach(() => {
@@ -331,6 +332,73 @@ describe('SMHI Client', () => {
       const result = await getWeatherWarnings('en', undefined, 'Norrbotten');
 
       expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('fetchWeatherAnalysis', () => {
+    it('fetches from the mesan2g category', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(weatherAnalysisFixture),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchWeatherAnalysis(59.3293, 18.0686);
+
+      expect(result.referenceTime).toBe('2026-08-08T21:00:00Z');
+      expect(result.timeSeries).toHaveLength(3);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('category/mesan2g/version/3/geotype/point/lon/18.068600/lat/59.329300')
+      );
+    });
+
+    it('throws on coordinates outside coverage area', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(fetchWeatherAnalysis(40.7128, -74.006)).rejects.toThrow(
+        'outside SMHI meteorological analysis coverage area'
+      );
+    });
+  });
+
+  describe('getWeatherAnalysis', () => {
+    it('resolves weather descriptions and carries through sparse fields', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(weatherAnalysisFixture),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await getWeatherAnalysis(59.3293, 18.0686);
+
+      expect(result).toHaveLength(3);
+      expect(result[0].temperature).toBe(18.6);
+      expect(result[0].weatherDescription).toBe('Nearly clear sky');
+      expect(result[0].temperatureMin).toBeUndefined();
+      expect(result[0].validTime).toBe('2026-08-08T21:00:00Z');
+
+      expect(result[2].temperatureMin).toBe(15.9);
+      expect(result[2].temperatureMax).toBe(22.7);
+      expect(result[2].precipitationLast12h).toBe(0.0);
+    });
+
+    it('caps results to the requested number of most recent hours', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(weatherAnalysisFixture),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await getWeatherAnalysis(59.3293, 18.0686, 2);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].validTime).toBe('2026-08-08T21:00:00Z');
+      expect(result[1].validTime).toBe('2026-08-08T20:00:00Z');
     });
   });
 });

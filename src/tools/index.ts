@@ -9,3 +9,8 @@ export {
   getWeatherWarningsSchema,
   type GetWeatherWarningsInput,
 } from './get-weather-warnings.js';
+export {
+  getWeatherAnalysisTool,
+  getWeatherAnalysisSchema,
+  type GetWeatherAnalysisInput,
+} from './get-weather-analysis.js';

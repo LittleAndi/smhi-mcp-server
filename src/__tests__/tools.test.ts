@@ -6,10 +6,12 @@ import { getDailySummaryTool, getDailySummarySchema } from '../tools/get-daily-s
 import { getFireRiskTool, getFireRiskSchema } from '../tools/get-fire-risk.js';
 import { getRadarImageTool, getRadarImageSchema } from '../tools/get-radar-image.js';
 import { getWeatherWarningsTool, getWeatherWarningsSchema } from '../tools/get-weather-warnings.js';
+import { getWeatherAnalysisTool, getWeatherAnalysisSchema } from '../tools/get-weather-analysis.js';
 import forecastFixture from './fixtures/forecast-response.json';
 import fireRiskFixture from './fixtures/fire-risk-response.json';
 import radarCompFixture from './fixtures/radar-comp-response.json';
 import warningsFixture from './fixtures/warnings-response.json';
+import weatherAnalysisFixture from './fixtures/weather-analysis-response.json';
 
 describe('MCP Tools', () => {
   beforeEach(() => {
@@ -193,6 +195,36 @@ describe('MCP Tools', () => {
 
       expect(result.count).toBe(1);
       expect(result.warnings[0].areaName).toBe('Gotland');
+    });
+  });
+
+  describe('getWeatherAnalysisTool', () => {
+    beforeEach(() => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(weatherAnalysisFixture),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+    });
+
+    it('validates input schema with defaults', () => {
+      const parsed = getWeatherAnalysisSchema.parse({ latitude: 59, longitude: 18 });
+      expect(parsed.hours).toBe(24);
+    });
+
+    it('validates hours range', () => {
+      expect(() => getWeatherAnalysisSchema.parse({ latitude: 59, longitude: 18, hours: 0 })).toThrow();
+      expect(() => getWeatherAnalysisSchema.parse({ latitude: 59, longitude: 18, hours: 25 })).toThrow();
+      expect(() => getWeatherAnalysisSchema.parse({ latitude: 59, longitude: 18, hours: 24 })).not.toThrow();
+    });
+
+    it('returns weather analysis array', async () => {
+      const result = await getWeatherAnalysisTool({ latitude: 59.3293, longitude: 18.0686, hours: 24 });
+
+      expect(result.location.latitude).toBe(59.3293);
+      expect(result.hours).toBe(24);
+      expect(result.analysis).toBeInstanceOf(Array);
+      expect(result.analysis[0].weatherDescription).toBeDefined();
     });
   });
 });
