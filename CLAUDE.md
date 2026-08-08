@@ -48,6 +48,12 @@ Each tool module is a thin adapter: input validation lives in the zod schema (`s
 
 **Coverage:** Sweden, Norway, Finland, Denmark, Estonia, parts of Latvia/Lithuania for forecast and fire-risk tools; `get_radar_image` is Sweden-only.
 
+## Release process
+
+Versioning and `CHANGELOG.md` are managed by [release-please](https://github.com/googleapis/release-please) (`.github/workflows/release-please.yml`), triggered on every push to `main`. It bumps `package.json`, updates `CHANGELOG.md`, and tags + creates a GitHub Release when its release PR is merged — no npm publish step.
+
+This depends on commit messages (or squash-merge PR titles) following [Conventional Commits](https://www.conventionalcommits.org/): `feat: ...` (minor bump), `fix: ...` (patch bump), `feat!: ...`/`BREAKING CHANGE:` footer (major bump), `chore:`/`docs:`/`refactor:`/`test:` (no bump, still changelogged). A plain, unprefixed commit message is treated as a chore.
+
 ## Testing conventions
 
 Tests mock global `fetch` (`vi.stubGlobal('fetch', ...)`) against JSON fixtures in `src/__tests__/fixtures/` (`forecast-response.json`, `fire-risk-response.json`, `radar-comp-response.json`) rather than hitting the live SMHI API. When changing a raw response type in `types.ts` or the shape SMHI returns, update the matching fixture.
