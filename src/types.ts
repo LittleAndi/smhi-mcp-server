@@ -181,3 +181,90 @@ export interface RadarComposite {
   mimeType: string;
   imageBase64: string;
 }
+
+/**
+ * SMHI Impact Based Weather Warnings (IBWwarnings) types
+ * Endpoint: https://opendata-download-warnings.smhi.se/ibww/api/version/1/warning.json
+ */
+export type WarningSeverity = 'RED' | 'ORANGE' | 'YELLOW' | 'MESSAGE';
+
+export interface SMHIWarningTranslated {
+  sv: string;
+  en: string;
+}
+
+export interface SMHIWarningCodedText extends SMHIWarningTranslated {
+  code: string;
+}
+
+export interface SMHIWarningEvent extends SMHIWarningCodedText {
+  mhoClassification?: SMHIWarningCodedText;
+}
+
+export interface SMHIWarningLevel extends SMHIWarningTranslated {
+  code: WarningSeverity;
+}
+
+export interface SMHIAffectedArea extends SMHIWarningTranslated {
+  id: number;
+}
+
+export interface SMHIWarningDescriptionSection {
+  title: SMHIWarningCodedText;
+  text: SMHIWarningTranslated;
+}
+
+export interface SMHIWarningArea {
+  id: number;
+  approximateStart: string;
+  published: string;
+  normalProbability: boolean;
+  pushNotice: boolean;
+  areaName: SMHIWarningTranslated;
+  warningLevel: SMHIWarningLevel;
+  eventDescription: SMHIWarningCodedText;
+  affectedAreas: SMHIAffectedArea[];
+  descriptions: SMHIWarningDescriptionSection[];
+  area: {
+    type: string;
+    geometry: {
+      type: string;
+      coordinates: unknown;
+    };
+    properties: Record<string, unknown>;
+  };
+}
+
+export interface SMHIWarning {
+  id: number;
+  normalProbability: boolean;
+  event: SMHIWarningEvent;
+  descriptions: SMHIWarningDescriptionSection[];
+  warningAreas: SMHIWarningArea[];
+  created: string;
+}
+
+export type SMHIWarningsResponse = SMHIWarning[];
+
+// Processed weather warning: one entry per warningArea, in the requested language
+export interface WeatherWarning {
+  id: number;
+  areaId: number;
+  event: string;
+  eventCode: string;
+  severity: string;
+  severityCode: WarningSeverity;
+  areaName: string;
+  affectedCounties: string[];
+  descriptions: { title: string; text: string }[];
+  approximateStart: string;
+  published: string;
+}
+
+export type WarningLanguage = 'sv' | 'en';
+
+export interface GetWeatherWarningsInput {
+  language?: WarningLanguage;
+  minSeverity?: WarningSeverity;
+  county?: string;
+}

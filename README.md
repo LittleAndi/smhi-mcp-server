@@ -17,10 +17,11 @@ MCP server for Swedish Meteorological and Hydrological Institute (SMHI) weather 
 - **get_daily_summary** - Daily high/low for up to 10 days
 - **get_fire_risk** - Wildfire/forest fire risk forecast (Canadian FWI system)
 - **get_radar_image** - Latest observed precipitation radar composite for Sweden
+- **get_weather_warnings** - Active official SMHI weather warnings/alerts (wind, rain, snow, thunder, flooding, fire risk, etc.)
 
 ## Coverage
 
-Sweden, Norway, Finland, Denmark, Estonia, and parts of Latvia/Lithuania. `get_radar_image` is Sweden-only.
+Sweden, Norway, Finland, Denmark, Estonia, and parts of Latvia/Lithuania. `get_radar_image` and `get_weather_warnings` are Sweden-only.
 
 ## Installation
 
@@ -81,6 +82,13 @@ Input: { "latitude": 58.5877, "longitude": 16.1924, "period": "daily" }
 ```
 Tool: get_radar_image
 Input: {}
+```
+
+### Check for active storm warnings in Stockholm county
+
+```
+Tool: get_weather_warnings
+Input: { "county": "Stockholm", "minSeverity": "YELLOW" }
 ```
 
 ## API Reference
@@ -146,6 +154,18 @@ Get the latest Swedish precipitation radar composite (mosaic of all Swedish rada
 No input parameters.
 
 Returns the radar image (PNG) plus `area`, `product`, and `validTime`/`updated` timestamps. Coverage: Sweden only.
+
+### get_weather_warnings
+
+Get currently active official SMHI weather warnings (impact-based warnings, `ibwwarnings`/IBWwarnings API). Not coordinate-based — returns all active warnings for Sweden, each tagged with the county/area it affects; filter client-side by severity and/or county.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| language | string | No | en | `en` or `sv` |
+| minSeverity | string | No | - | `RED`, `ORANGE`, `YELLOW`, or `MESSAGE` — only return warnings at or above this severity |
+| county | string | No | - | Case-insensitive substring match against the warning's area name and affected counties, e.g. `"Stockholm"` |
+
+Returns `count` plus a flat `warnings` array (one entry per warning area) with `event`, `severity`/`severityCode`, `areaName`, `affectedCounties`, `descriptions` (title/text pairs), `approximateStart`, and `published`. Coverage: Sweden only.
 
 ## Development
 

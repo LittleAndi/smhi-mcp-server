@@ -17,6 +17,11 @@ import type {
   FireRiskPeriod,
   RadarProductResponse,
   RadarComposite,
+  SMHIWarningsResponse,
+  SMHIWarningArea,
+  WeatherWarning,
+  WarningSeverity,
+  WarningLanguage,
 } from './types.js';
 import { getWeatherDescription } from './weather-symbols.js';
 import { getFireRiskClass, getGrassFireClass, getForestDrynessClass } from './fire-risk-classes.js';
@@ -26,6 +31,14 @@ const CATEGORY = 'snow1g';
 const FIRE_RISK_CATEGORY = 'fwif1g';
 const VERSION = '1';
 const RADAR_BASE_URL = 'https://opendata-download-radar.smhi.se/api/version/latest';
+const WARNINGS_URL = 'https://opendata-download-warnings.smhi.se/ibww/api/version/1/warning.json';
+
+const SEVERITY_RANK: Record<WarningSeverity, number> = {
+  MESSAGE: 0,
+  YELLOW: 1,
+  ORANGE: 2,
+  RED: 3,
+};
 
 export class SMHIClientError extends Error {
   constructor(
@@ -363,4 +376,92 @@ export async function fetchRadarComposite(): Promise<RadarComposite> {
     mimeType: 'image/png',
     imageBase64: buffer.toString('base64'),
   };
+}
+
+/**
+ * Flattens a single SMHI warning + one of its warningAreas into a WeatherWarning,
+ * resolving all sv/en text pairs to the requested language.
+ */
+function warningAreaToWeatherWarning(
+  warningId: number,
+  event: { sv: string; en: string; code: string },
+  area: SMHIWarningArea,
+  language: WarningLanguage
+): WeatherWarning {
+  return {
+    id: warningId,
+    areaId: area.id,
+    event: event[language],
+    eventCode: event.code,
+    severity: area.warningLevel[language],
+    severityCode: area.warningLevel.code,
+    areaName: area.areaName[language],
+    affectedCounties: area.affectedAreas.map(a => a[language]),
+    descriptions: area.descriptions.map(d => ({
+      title: d.title[language],
+      text: d.text[language],
+    })),
+    approximateStart: area.approximateStart,
+    published: area.published,
+  };
+}
+
+/**
+ * Fetches the raw active weather warnings from SMHI's IBWwarnings API.
+ * Not coordinate-based: returns all currently active warnings for Sweden.
+ */
+export async function fetchWeatherWarnings(): Promise<SMHIWarningsResponse> {
+  let response: Response;
+  try {
+    response = await fetch(WARNINGS_URL);
+  } catch (error) {
+    throw new SMHIClientError(
+      `Network error fetching weather warnings: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+
+  if (!response.ok) {
+    throw new SMHIClientError(
+      `SMHI warnings API error: ${response.status} ${response.statusText}`,
+      response.status
+    );
+  }
+
+  return response.json() as Promise<SMHIWarningsResponse>;
+}
+
+/**
+ * Gets currently active weather warnings for Sweden, flattened to one entry per
+ * warning area and optionally filtered by minimum severity and/or affected county.
+ */
+export async function getWeatherWarnings(
+  language: WarningLanguage = 'en',
+  minSeverity?: WarningSeverity,
+  county?: string
+): Promise<WeatherWarning[]> {
+  const warnings = await fetchWeatherWarnings();
+
+  const minRank = minSeverity ? SEVERITY_RANK[minSeverity] : undefined;
+  const countyNeedle = county?.toLowerCase();
+
+  const flattened: WeatherWarning[] = [];
+  for (const warning of warnings) {
+    for (const area of warning.warningAreas) {
+      flattened.push(warningAreaToWeatherWarning(warning.id, warning.event, area, language));
+    }
+  }
+
+  return flattened.filter(w => {
+    if (minRank !== undefined && SEVERITY_RANK[w.severityCode] < minRank) {
+      return false;
+    }
+    if (
+      countyNeedle &&
+      !w.areaName.toLowerCase().includes(countyNeedle) &&
+      !w.affectedCounties.some(c => c.toLowerCase().includes(countyNeedle))
+    ) {
+      return false;
+    }
+    return true;
+  });
 }

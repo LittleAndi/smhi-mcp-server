@@ -1,0 +1,186 @@
+[
+  {
+    "id": 3410,
+    "normalProbability": true,
+    "event": {
+      "sv": "Vind",
+      "en": "Wind",
+      "code": "WIND"
+    },
+    "descriptions": [],
+    "warningAreas": [
+      {
+        "id": 10450,
+        "approximateStart": "2026-08-08T12:00:00.000Z",
+        "published": "2026-08-08T06:00:00.000Z",
+        "normalProbability": true,
+        "pushNotice": true,
+        "areaName": {
+          "sv": "Västra Götaland",
+          "en": "Västra Götaland"
+        },
+        "warningLevel": {
+          "sv": "Orange",
+          "en": "Orange",
+          "code": "ORANGE"
+        },
+        "eventDescription": {
+          "sv": "Hård vind",
+          "en": "Strong wind",
+          "code": "WIND"
+        },
+        "affectedAreas": [
+          {
+            "id": 14,
+            "sv": "Västra Götalands län",
+            "en": "Västra Götaland County"
+          }
+        ],
+        "descriptions": [
+          {
+            "title": {
+              "sv": "Händelsebeskrivning",
+              "en": "Description of incident",
+              "code": "INCIDENT"
+            },
+            "text": {
+              "sv": "Hård vind, 21 m/s, väntas.",
+              "en": "Strong wind, 21 m/s, is expected."
+            }
+          }
+        ],
+        "area": {
+          "type": "Feature",
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": []
+          },
+          "properties": {}
+        }
+      },
+      {
+        "id": 10451,
+        "approximateStart": "2026-08-08T12:00:00.000Z",
+        "published": "2026-08-08T06:00:00.000Z",
+        "normalProbability": true,
+        "pushNotice": true,
+        "areaName": {
+          "sv": "Halland",
+          "en": "Halland"
+        },
+        "warningLevel": {
+          "sv": "Gul",
+          "en": "Yellow",
+          "code": "YELLOW"
+        },
+        "eventDescription": {
+          "sv": "Hård vind",
+          "en": "Strong wind",
+          "code": "WIND"
+        },
+        "affectedAreas": [
+          {
+            "id": 13,
+            "sv": "Hallands län",
+            "en": "Halland County"
+          }
+        ],
+        "descriptions": [
+          {
+            "title": {
+              "sv": "Händelsebeskrivning",
+              "en": "Description of incident",
+              "code": "INCIDENT"
+            },
+            "text": {
+              "sv": "Hård vind, 18 m/s, väntas.",
+              "en": "Strong wind, 18 m/s, is expected."
+            }
+          }
+        ],
+        "area": {
+          "type": "Feature",
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": []
+          },
+          "properties": {}
+        }
+      }
+    ],
+    "created": "2026-08-08T06:00:00.000Z"
+  },
+  {
+    "id": 3303,
+    "normalProbability": true,
+    "event": {
+      "sv": "Brandrisk",
+      "en": "Fire risk",
+      "code": "FIRE"
+    },
+    "descriptions": [],
+    "warningAreas": [
+      {
+        "id": 10391,
+        "approximateStart": "2026-08-06T07:00:00.129Z",
+        "published": "2026-08-08T06:55:20.750Z",
+        "normalProbability": true,
+        "pushNotice": true,
+        "areaName": {
+          "sv": "Gotland",
+          "en": "Gotland"
+        },
+        "warningLevel": {
+          "sv": "Meddelande",
+          "en": "Message",
+          "code": "MESSAGE"
+        },
+        "eventDescription": {
+          "sv": "Risk för skogsbrand",
+          "en": "Forest fire",
+          "code": "FOREST_FIRE"
+        },
+        "affectedAreas": [
+          {
+            "id": 9,
+            "sv": "Gotlands län",
+            "en": "Gotland County"
+          }
+        ],
+        "descriptions": [
+          {
+            "title": {
+              "sv": "Händelsebeskrivning",
+              "en": "Description of incident",
+              "code": "INCIDENT"
+            },
+            "text": {
+              "sv": "Skogsbrandsrisken är stor till mycket stor.",
+              "en": "The risk of forest fires is high to very high."
+            }
+          },
+          {
+            "title": {
+              "sv": "Vad ska jag tänka på?",
+              "en": "What should I think about?",
+              "code": "AFFECT"
+            },
+            "text": {
+              "sv": "Var mycket försiktig vid eldning eller arbete med stora maskiner utomhus.",
+              "en": "Take great care when lighting fires or operating heavy machinery outside."
+            }
+          }
+        ],
+        "area": {
+          "type": "Feature",
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": []
+          },
+          "properties": {}
+        }
+      }
+    ],
+    "created": "2026-08-05T12:28:30.134Z"
+  }
+]

@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchForecast, getCurrentWeather, getHourlyForecast, getDailySummary, fetchFireRisk, getFireRisk, fetchRadarComposite, SMHIClientError } from '../smhi-client.js';
+import { fetchForecast, getCurrentWeather, getHourlyForecast, getDailySummary, fetchFireRisk, getFireRisk, fetchRadarComposite, fetchWeatherWarnings, getWeatherWarnings, SMHIClientError } from '../smhi-client.js';
 import forecastFixture from './fixtures/forecast-response.json';
 import fireRiskFixture from './fixtures/fire-risk-response.json';
 import radarCompFixture from './fixtures/radar-comp-response.json';
+import warningsFixture from './fixtures/warnings-response.json';
 
 describe('SMHI Client', () => {
   beforeEach(() => {
@@ -251,6 +252,85 @@ describe('SMHI Client', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(fetchRadarComposite()).rejects.toThrow('No radar composite image currently available');
+    });
+  });
+
+  describe('fetchWeatherWarnings', () => {
+    it('fetches the raw warnings list', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(warningsFixture),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchWeatherWarnings();
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://opendata-download-warnings.smhi.se/ibww/api/version/1/warning.json'
+      );
+      expect(result).toHaveLength(2);
+    });
+
+    it('throws SMHIClientError on non-OK response', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(fetchWeatherWarnings()).rejects.toThrow('SMHI warnings API error: 503');
+    });
+  });
+
+  describe('getWeatherWarnings', () => {
+    beforeEach(() => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(warningsFixture),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+    });
+
+    it('flattens warningAreas into one entry per area, resolved to English by default', async () => {
+      const result = await getWeatherWarnings();
+
+      expect(result).toHaveLength(3);
+      expect(result[0].event).toBe('Wind');
+      expect(result[0].areaName).toBe('Västra Götaland');
+      expect(result[0].severity).toBe('Orange');
+      expect(result[0].severityCode).toBe('ORANGE');
+      expect(result[0].affectedCounties).toEqual(['Västra Götaland County']);
+      expect(result[1].severityCode).toBe('YELLOW');
+      expect(result[2].event).toBe('Fire risk');
+    });
+
+    it('resolves Swedish text when language is "sv"', async () => {
+      const result = await getWeatherWarnings('sv');
+
+      expect(result[0].event).toBe('Vind');
+      expect(result[0].severity).toBe('Orange');
+      expect(result[0].areaName).toBe('Västra Götaland');
+    });
+
+    it('filters by minimum severity', async () => {
+      const result = await getWeatherWarnings('en', 'ORANGE');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].severityCode).toBe('ORANGE');
+    });
+
+    it('filters by county substring, case-insensitive', async () => {
+      const result = await getWeatherWarnings('en', undefined, 'gotland');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].areaName).toBe('Gotland');
+    });
+
+    it('returns no matches for an unaffected county', async () => {
+      const result = await getWeatherWarnings('en', undefined, 'Norrbotten');
+
+      expect(result).toHaveLength(0);
     });
   });
 });

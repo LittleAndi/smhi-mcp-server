@@ -25,6 +25,8 @@ import {
   getFireRiskSchema,
   getRadarImageTool,
   getRadarImageSchema,
+  getWeatherWarningsTool,
+  getWeatherWarningsSchema,
 } from './tools/index.js';
 import { SMHIClientError } from './smhi-client.js';
 
@@ -251,6 +253,43 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {},
         },
       },
+      {
+        name: 'get_weather_warnings',
+        description:
+          'Get currently active official SMHI weather warnings/alerts for Sweden (impact-based warnings for ' +
+          'wind, rain, snow, thunder, high temperatures, flooding, fire risk, and more). Not coordinate-based — ' +
+          'returns all active warnings, each tagged with the county/area it affects, so filter by county name ' +
+          'and/or minimum severity to narrow results. Severity levels from most to least severe: RED > ORANGE > ' +
+          'YELLOW > MESSAGE. Use this for "is there a storm warning" type questions; use the forecast tools for ' +
+          'general future conditions and get_fire_risk for the underlying fire danger index. Returns an error ' +
+          'result (isError: true) if the SMHI warnings API is unreachable. Coverage: Sweden only.',
+        annotations: {
+          title: 'Get Active Weather Warnings',
+          ...READONLY_ANNOTATIONS,
+        },
+        inputSchema: {
+          type: 'object',
+          properties: {
+            language: {
+              type: 'string',
+              enum: ['sv', 'en'],
+              description: 'Language for warning text: "en" (English) or "sv" (Swedish)',
+              default: 'en',
+            },
+            minSeverity: {
+              type: 'string',
+              enum: ['RED', 'ORANGE', 'YELLOW', 'MESSAGE'],
+              description:
+                'Only return warnings at or above this severity (RED > ORANGE > YELLOW > MESSAGE). Omit to return all active warnings.',
+            },
+            county: {
+              type: 'string',
+              description:
+                'Only return warnings affecting this county or area (case-insensitive substring match), e.g. "Stockholm" or "Gotland"',
+            },
+          },
+        },
+      },
     ],
   };
 });
@@ -316,6 +355,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             },
             { type: 'image', data: result.imageBase64, mimeType: result.mimeType },
           ],
+        };
+      }
+
+      case 'get_weather_warnings': {
+        const input = getWeatherWarningsSchema.parse(args ?? {});
+        const result = await getWeatherWarningsTool(input);
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
       }
 
