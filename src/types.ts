@@ -268,3 +268,92 @@ export interface GetWeatherWarningsInput {
   minSeverity?: WarningSeverity;
   county?: string;
 }
+
+/**
+ * SMHI MESAN2G Meteorological Analysis (Mesan2gv3) types
+ * Endpoint: https://opendata-download-metanalys.smhi.se/api/category/mesan2g/version/3/geotype/point/lon/{lon}/lat/{lat}/data.json
+ * Unlike the forecast APIs, this is a gridded "best current estimate" analysis (observations
+ * blended with a short-range model) covering the past ~24 hours, returned newest entry first.
+ * Some fields are only populated at synoptic hours (00/06/12/18 UTC and similar), hence optional.
+ */
+export interface MesanResponse {
+  createdTime: string;
+  referenceTime: string;
+  geometry: {
+    type: string;
+    coordinates: [number, number];
+  };
+  timeSeries: MesanTimeSeries[];
+}
+
+export interface MesanTimeSeries {
+  time: string;
+  data: MesanTimeSeriesData;
+}
+
+export interface MesanTimeSeriesData {
+  air_temperature: number;
+  air_temperature_min?: number;
+  air_temperature_max?: number;
+  dew_point_temperature: number;
+  wet_bulb_temperature: number;
+  wind_from_direction: number;
+  wind_speed: number;
+  wind_speed_of_gust: number;
+  relative_humidity: number;
+  air_pressure: number;
+  air_pressure_at_mean_sea_level: number;
+  visibility_in_air: number;
+  cloud_area_fraction: number;
+  low_type_cloud_area_fraction: number;
+  medium_type_cloud_area_fraction: number;
+  high_type_cloud_area_fraction: number;
+  cloud_base_altitude: number;
+  cloud_top_altitude: number;
+  precipitation_amount_last_1_hours: number;
+  precipitation_amount_last_3_hours?: number;
+  precipitation_amount_last_12_hours?: number;
+  precipitation_amount_last_24_hours?: number;
+  precipitation_frozen_part: number;
+  predominant_precipitation_type_at_surface: number;
+  change_over_time_in_surface_snow_amount_1_hours: number;
+  change_over_time_in_surface_snow_amount_3_hours?: number;
+  change_over_time_in_surface_snow_amount_12_hours?: number;
+  change_over_time_in_surface_snow_amount_24_hours?: number;
+  symbol_code: number;
+}
+
+// Processed weather analysis data
+export interface WeatherAnalysis {
+  temperature: number;
+  temperatureMin?: number;
+  temperatureMax?: number;
+  dewPoint: number;
+  wetBulbTemperature: number;
+  humidity: number;
+  windSpeed: number;
+  windDirection: number;
+  windGust: number;
+  pressure: number;
+  pressureAtStation: number;
+  visibility: number;
+  cloudCover: number;
+  lowCloudCover: number;
+  mediumCloudCover: number;
+  highCloudCover: number;
+  cloudBaseAltitude: number;
+  cloudTopAltitude: number;
+  precipitationLast1h: number;
+  precipitationLast3h?: number;
+  precipitationLast12h?: number;
+  precipitationLast24h?: number;
+  precipitationCategory: number;
+  snowDepthChange1h: number;
+  weatherSymbol: number;
+  weatherDescription: string;
+  validTime: string;
+}
+
+export interface WeatherAnalysisInput extends CoordinatesInput {
+  hours?: number;
+}

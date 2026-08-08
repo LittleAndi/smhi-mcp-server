@@ -18,6 +18,7 @@ MCP server for Swedish Meteorological and Hydrological Institute (SMHI) weather 
 - **get_fire_risk** - Wildfire/forest fire risk forecast (Canadian FWI system)
 - **get_radar_image** - Latest observed precipitation radar composite for Sweden
 - **get_weather_warnings** - Active official SMHI weather warnings/alerts (wind, rain, snow, thunder, flooding, fire risk, etc.)
+- **get_weather_analysis** - Past ~24h gridded meteorological analysis ("what's actually happening"), not a forecast
 
 ## Coverage
 
@@ -89,6 +90,13 @@ Input: {}
 ```
 Tool: get_weather_warnings
 Input: { "county": "Stockholm", "minSeverity": "YELLOW" }
+```
+
+### See what's actually happened in Malmö over the last few hours
+
+```
+Tool: get_weather_analysis
+Input: { "latitude": 55.6050, "longitude": 13.0038, "hours": 6 }
 ```
 
 ## API Reference
@@ -166,6 +174,18 @@ Get currently active official SMHI weather warnings (impact-based warnings, `ibw
 | county | string | No | - | Case-insensitive substring match against the warning's area name and affected counties, e.g. `"Stockholm"` |
 
 Returns `count` plus a flat `warnings` array (one entry per warning area) with `event`, `severity`/`severityCode`, `areaName`, `affectedCounties`, `descriptions` (title/text pairs), `approximateStart`, and `published`. Coverage: Sweden only.
+
+### get_weather_analysis
+
+Get the past ~24 hours of gridded meteorological analysis (SMHI's `mesan2g`/Mesan2gv3 API): a "best current estimate" of conditions, blending observations with a short-range model on a ~2.5 km grid, not a forecast. Useful for nowcasting at a point without a nearby observation station, checking how a past forecast turned out, or "what was the weather really like" lookups.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| latitude | number | Yes | - | -90 to 90 |
+| longitude | number | Yes | - | -180 to 180 |
+| hours | number | No | 24 | 1-24, most recent hours to return |
+
+Returns hourly entries (most recent first): temperature (°C, plus min/max at some hours), dew point, wet-bulb temperature (°C), humidity (%), wind speed/direction/gust (m/s), pressure (hPa, sea-level and station), visibility (km), cloud cover (total/low/medium/high, %) and base/top altitude (m), precipitation over the last 1/3/12/24h (mm — the 3/12/24h windows are only populated at some hours), snow depth change over the last hour (cm), and a weather symbol/description.
 
 ## Development
 
