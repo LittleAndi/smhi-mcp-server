@@ -30,7 +30,7 @@
     "@vitest/coverage-v8": "^4.1.10"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "license": "MIT",
   "keywords": ["mcp", "smhi", "weather", "sweden", "forecast", "snow1g"]
