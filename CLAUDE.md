@@ -1,0 +1,57 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+An MCP (Model Context Protocol) server exposing SMHI (Swedish Meteorological and Hydrological Institute) weather data as tools, built against SMHI's current `snow1g` point-forecast API. SMHI retired the older `pmp3g` API on 2026-03-31; this is a fresh implementation, not a migration.
+
+## Commands
+
+```bash
+npm install
+npm run typecheck      # tsc --noEmit
+npm test                # vitest run (all tests, single run)
+npm run test:watch      # vitest (watch mode)
+npm run test:coverage   # vitest run --coverage
+npm run build            # tsc -> dist/
+npm start                 # node dist/index.js
+```
+
+Run a single test file: `npx vitest run src/__tests__/tools.test.ts`
+Run tests matching a name: `npx vitest run -t "getFireRisk"`
+
+CI (`.github/workflows/ci.yml`) runs on Node 20.x/22.x/24.x: `npm ci`, `npm run typecheck`, `npm test`, `npm run build`. Match this locally before pushing.
+
+## Architecture
+
+**Request flow:** `src/index.ts` (MCP server, stdio transport) → tool module in `src/tools/*.ts` (zod schema + handler) → `src/smhi-client.ts` (fetches SMHI APIs, shapes raw responses) → lookup tables (`weather-symbols.ts`, `fire-risk-classes.ts`) for human-readable descriptions.
+
+**Adding a new tool** touches four places:
+1. `src/smhi-client.ts` — fetch function against the relevant SMHI API/category, plus a converter from the raw SMHI shape to a processed type.
+2. `src/types.ts` — raw API response types and processed output types for the new data.
+3. `src/tools/<name>.ts` — zod input schema (`z.object` with `.describe()` on each field) + async handler calling the client function. Exports the schema, the handler, and the inferred input type.
+4. `src/tools/index.ts` — re-export the new schema/handler/type.
+5. `src/index.ts` — register the tool in the `ListToolsRequestSchema` handler (JSON Schema `inputSchema`, description, `READONLY_ANNOTATIONS`) and add a `case` in the `CallToolRequestSchema` switch that parses input with the zod schema and calls the handler.
+
+Each tool module is a thin adapter: input validation lives in the zod schema (`src/index.ts` re-validates with the same schema before dispatch), and all HTTP/data-shaping logic lives in `smhi-client.ts`. Tool handlers just call the client and wrap the result with `location`/`period` metadata.
+
+**Two independent SMHI APIs are wired up:**
+- `snow1g` (forecast) and `fwif1g` (fire weather index) both live under `opendata-download-metfcst.smhi.se`, share `validateCoordinates`, and return 404 for out-of-coverage points — mapped to a descriptive `SMHIClientError`.
+- Radar (`opendata-download-radar.smhi.se`) is a two-step fetch: get the product metadata JSON to find the latest PNG link, then fetch and base64-encode the image. No coordinates involved (Sweden-only, no input params).
+
+**Error handling:** all client functions throw `SMHIClientError` (with optional `statusCode`) on network failure, non-OK responses, or missing data. `src/index.ts`'s tool-call handler catches everything and returns `{ content: [...], isError: true }` rather than throwing across the MCP boundary — never let an exception escape the `CallToolRequestSchema` handler.
+
+**Raw vs. processed data:** `get_forecast` returns the (lightly renamed) raw SMHI time series (`parameters` = raw `SMHITimeSeriesData`) for every field including ones no other tool exposes. `get_current_weather`/`get_hourly_forecast`/`get_daily_summary` return the processed `CurrentWeather`/`HourlyForecast`/`DailySummary` shapes with resolved `weatherDescription` strings. `get_fire_risk` flattens FWIF1G's parameter-array format (`FWIParameter[]` with single-element `values`) into a flat record via `fwiParamsToRecord`, then resolves class descriptions (fire/grass/forest-dryness — the latter is daily-only).
+
+**Units** (consistent across tools): temperature °C, wind speed m/s, pressure hPa, precipitation mm, humidity/cloud-cover/probabilities %. FWI/ISI/BUI/FFMC/DMC/DC fire indices are unitless.
+
+**Coverage:** Sweden, Norway, Finland, Denmark, Estonia, parts of Latvia/Lithuania for forecast and fire-risk tools; `get_radar_image` is Sweden-only.
+
+## Testing conventions
+
+Tests mock global `fetch` (`vi.stubGlobal('fetch', ...)`) against JSON fixtures in `src/__tests__/fixtures/` (`forecast-response.json`, `fire-risk-response.json`, `radar-comp-response.json`) rather than hitting the live SMHI API. When changing a raw response type in `types.ts` or the shape SMHI returns, update the matching fixture.
+
+## Import note
+
+This machine also has a Codex config (`~/.codex/config.toml`) and a Gemini CLI config (`~/.gemini/`, `GEMINI.md`) at the user level. If you want to bring over MCP servers, slash commands, or instructions from those into Claude Code, reply `/import` to scan what's importable.
