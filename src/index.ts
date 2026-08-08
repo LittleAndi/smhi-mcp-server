@@ -31,6 +31,16 @@ import { SMHIClientError } from './smhi-client.js';
 const COVERAGE_NOTE =
   'Coverage: Sweden, Norway, Finland, Denmark, Estonia, and parts of Latvia/Lithuania.';
 
+const ERROR_NOTE =
+  'Returns an error result (isError: true) if coordinates are out of range or the SMHI API is unreachable.';
+
+const READONLY_ANNOTATIONS = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: true,
+} as const;
+
 const server = new Server(
   {
     name: 'smhi-mcp-server',
@@ -50,7 +60,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'get_forecast',
         description:
-          `Get the full ~10-day weather forecast for a location. Returns all time series data with detailed parameters. ${COVERAGE_NOTE}`,
+          `Get the full ~10-day weather forecast for a location, with every raw SMHI parameter at native time ` +
+          `resolution (hourly for the first days, then 3/6-hourly further out) — including fields not exposed by ` +
+          `the other forecast tools, such as cloud layers and precipitation min/max/median. Prefer ` +
+          `get_current_weather for a single now-reading, get_hourly_forecast for an hour-by-hour view, or ` +
+          `get_daily_summary for a multi-day high/low overview; use this tool when you need the complete unprocessed ` +
+          `dataset. Temperatures in °C, wind speed in m/s, pressure in hPa, precipitation in mm, humidity/cloud ` +
+          `cover/probabilities in %. ${ERROR_NOTE} ${COVERAGE_NOTE}`,
+        annotations: {
+          title: 'Get Full Weather Forecast',
+          ...READONLY_ANNOTATIONS,
+        },
         inputSchema: {
           type: 'object',
           properties: {
@@ -73,7 +93,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'get_current_weather',
         description:
-          `Get current weather conditions for a location. Returns temperature, wind, humidity, precipitation, and weather description. ${COVERAGE_NOTE}`,
+          `Get current weather conditions (the nearest forecast time step) for a location: temperature, wind, ` +
+          `humidity, precipitation, and a human-readable weather description. Use this for a quick "what's the ` +
+          `weather like right now" snapshot; use get_hourly_forecast for future hours, get_daily_summary or ` +
+          `get_forecast for a multi-day outlook. Temperature in °C, wind speed in m/s, pressure in hPa, ` +
+          `precipitation in mm, humidity/cloud cover/probabilities in %. ${ERROR_NOTE} ${COVERAGE_NOTE}`,
+        annotations: {
+          title: 'Get Current Weather',
+          ...READONLY_ANNOTATIONS,
+        },
         inputSchema: {
           type: 'object',
           properties: {
@@ -96,7 +124,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'get_hourly_forecast',
         description:
-          `Get hourly weather forecast for the next 1-48 hours. Returns temperature, wind, precipitation, and conditions for each hour. ${COVERAGE_NOTE}`,
+          `Get an hour-by-hour weather forecast for the next 1-48 hours (default 24): temperature, wind, ` +
+          `precipitation, and conditions per hour. Use this to answer questions like "will it rain in the next ` +
+          `few hours"; use get_current_weather for a single now-reading, get_daily_summary for a multi-day ` +
+          `high/low overview, or get_forecast for the complete raw dataset. Temperature in °C, wind speed in m/s, ` +
+          `precipitation in mm, probabilities in %. ${ERROR_NOTE} ${COVERAGE_NOTE}`,
+        annotations: {
+          title: 'Get Hourly Forecast',
+          ...READONLY_ANNOTATIONS,
+        },
         inputSchema: {
           type: 'object',
           properties: {
@@ -126,7 +162,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'get_daily_summary',
         description:
-          `Get daily weather summary for the next 1-10 days. Returns high/low temperatures, dominant weather conditions, and precipitation totals. ${COVERAGE_NOTE}`,
+          `Get a daily weather summary for the next 1-10 days (default 7): high/low temperature, dominant weather ` +
+          `condition, precipitation total, and max wind speed per day. Use this for a multi-day outlook at a ` +
+          `glance; use get_hourly_forecast or get_forecast when you need hour-level detail instead. Temperature in ` +
+          `°C, wind speed in m/s, precipitation in mm. ${ERROR_NOTE} ${COVERAGE_NOTE}`,
+        annotations: {
+          title: 'Get Daily Weather Summary',
+          ...READONLY_ANNOTATIONS,
+        },
         inputSchema: {
           type: 'object',
           properties: {
@@ -156,9 +199,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'get_fire_risk',
         description:
-          `Get wildfire/forest fire risk forecast (Canadian FWI system) for a location. Returns fire risk class, ` +
-          `underlying fire-behavior indices (FWI, ISI, BUI, FFMC, DMC, DC), grass fire risk, and forest dryness. ` +
-          `Calibrated for Swedish forest and grass fuels. ${COVERAGE_NOTE}`,
+          `Get a wildfire/forest fire risk forecast for a location, based on the Canadian Fire Weather Index (FWI) ` +
+          `system as run by SMHI and calibrated for Swedish forest and grass fuels. Use this instead of the ` +
+          `general forecast tools when the question is specifically about fire danger. Returns a fire risk class ` +
+          `(1-6) plus the underlying FWI/ISI/BUI/FFMC/DMC/DC indices (unitless index values, not raw weather ` +
+          `readings), grass fire risk class, and forest dryness class (daily period only). Also includes ` +
+          `temperature (°C), wind speed (m/s), humidity (%), and multi-day precipitation sums (mm). ${ERROR_NOTE} ${COVERAGE_NOTE}`,
+        annotations: {
+          title: 'Get Wildfire Risk Forecast',
+          ...READONLY_ANNOTATIONS,
+        },
         inputSchema: {
           type: 'object',
           properties: {
@@ -189,7 +239,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         description:
           'Get the latest Swedish precipitation radar composite (mosaic of all Swedish radar stations), updated ' +
           'roughly every 5 minutes. Unlike the forecast tools, this shows observed precipitation happening right ' +
-          'now, not a prediction. Returns the image along with its valid time. Coverage: Sweden only.',
+          'now, not a prediction — use the forecast tools instead if the question is about future weather. Takes ' +
+          'no parameters. Returns a PNG image plus its area, product name, and validTime/updated timestamps. ' +
+          'Returns an error result (isError: true) if the SMHI radar API is unreachable. Coverage: Sweden only.',
+        annotations: {
+          title: 'Get Precipitation Radar Image',
+          ...READONLY_ANNOTATIONS,
+        },
         inputSchema: {
           type: 'object',
           properties: {},

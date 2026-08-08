@@ -1,5 +1,8 @@
 # SMHI MCP Server
 
+[![CI](https://github.com/LittleAndi/smhi-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/LittleAndi/smhi-mcp-server/actions/workflows/ci.yml)
+[![smhi-mcp-server MCP server](https://glama.ai/mcp/servers/LittleAndi/smhi-mcp-server/badges/card.svg)](https://glama.ai/mcp/servers/LittleAndi/smhi-mcp-server)
+
 MCP server for Swedish Meteorological and Hydrological Institute (SMHI) weather data, built on SMHI's current `snow1g` point-forecast API.
 
 > SMHI retired its older `pmp3g` forecast API on 2026-03-31 in favor of `snow1g`. This project is a fresh implementation against the current API.
@@ -98,7 +101,7 @@ Get current weather conditions.
 | latitude | number | Yes | -90 to 90 |
 | longitude | number | Yes | -180 to 180 |
 
-Returns: temperature, humidity, wind, pressure, visibility, cloud cover, precipitation, weather description.
+Returns: temperature (°C), humidity (%), wind (m/s), pressure (hPa), visibility (km), cloud cover (%), precipitation (mm), weather description.
 
 ### get_hourly_forecast
 
@@ -120,7 +123,7 @@ Get daily weather summary.
 | longitude | number | Yes | - | -180 to 180 |
 | days | number | No | 7 | 1-10 |
 
-Returns: date, high/low temperature, dominant weather, precipitation sum, max wind speed.
+Returns: date, high/low temperature (°C), dominant weather, precipitation sum (mm), max wind speed (m/s).
 
 ### get_fire_risk
 
@@ -132,7 +135,7 @@ Get wildfire/forest fire risk forecast, based on the Canadian Fire Weather Index
 | longitude | number | Yes | - | -180 to 180 |
 | period | string | No | daily | `daily` (~6 days ahead, afternoon fire risk) or `hourly` (next 48 hours) |
 
-Returns per time step: fire risk class (1-6) and description, the underlying FWI/ISI/BUI/FFMC/DMC/DC indices, grass fire risk class, forest dryness class (`daily` only), temperature/wind/humidity, and multi-day precipitation sums.
+Returns per time step: fire risk class (1-6) and description, the underlying FWI/ISI/BUI/FFMC/DMC/DC indices (unitless), grass fire risk class, forest dryness class (`daily` only), temperature (°C)/wind (m/s)/humidity (%), and multi-day precipitation sums (mm).
 
 ### get_radar_image
 
