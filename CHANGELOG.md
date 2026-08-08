@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/LittleAndi/smhi-mcp-server/compare/v1.1.0...v1.2.0) (2026-08-08)
+
+
+### Features
+
+* add get_weather_analysis tool for SMHI Mesan2gv3 API ([#11](https://github.com/LittleAndi/smhi-mcp-server/issues/11)) ([570bcd0](https://github.com/LittleAndi/smhi-mcp-server/commit/570bcd0fe8eaeaaf8fbf3aea23580d675e8287db)), closes [#10](https://github.com/LittleAndi/smhi-mcp-server/issues/10)
+
 ## [1.1.0](https://github.com/LittleAndi/smhi-mcp-server/compare/v1.0.0...v1.1.0) (2026-08-08)
 
 
