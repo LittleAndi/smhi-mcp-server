@@ -3,7 +3,9 @@ import { getForecast, getForecastSchema } from '../tools/get-forecast.js';
 import { getCurrentWeatherTool, getCurrentWeatherSchema } from '../tools/get-current-weather.js';
 import { getHourlyForecastTool, getHourlyForecastSchema } from '../tools/get-hourly-forecast.js';
 import { getDailySummaryTool, getDailySummarySchema } from '../tools/get-daily-summary.js';
+import { getFireRiskTool, getFireRiskSchema } from '../tools/get-fire-risk.js';
 import forecastFixture from './fixtures/forecast-response.json';
+import fireRiskFixture from './fixtures/fire-risk-response.json';
 
 describe('MCP Tools', () => {
   beforeEach(() => {
@@ -94,6 +96,34 @@ describe('MCP Tools', () => {
         expect(result.summary[0].highTemp).toBeDefined();
         expect(result.summary[0].lowTemp).toBeDefined();
       }
+    });
+  });
+
+  describe('getFireRiskTool', () => {
+    beforeEach(() => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(fireRiskFixture),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+    });
+
+    it('validates input schema with defaults', () => {
+      const parsed = getFireRiskSchema.parse({ latitude: 59, longitude: 18 });
+      expect(parsed.period).toBe('daily');
+    });
+
+    it('rejects an invalid period', () => {
+      expect(() => getFireRiskSchema.parse({ latitude: 59, longitude: 18, period: 'weekly' })).toThrow();
+    });
+
+    it('returns fire risk forecast array', async () => {
+      const result = await getFireRiskTool({ latitude: 59.3293, longitude: 18.0686, period: 'daily' });
+
+      expect(result.location.latitude).toBe(59.3293);
+      expect(result.period).toBe('daily');
+      expect(result.forecast).toBeInstanceOf(Array);
+      expect(result.forecast[0].fireRiskDescription).toBe('Very high risk');
     });
   });
 });

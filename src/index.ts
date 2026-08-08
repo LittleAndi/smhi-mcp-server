@@ -21,6 +21,8 @@ import {
   getHourlyForecastSchema,
   getDailySummaryTool,
   getDailySummarySchema,
+  getFireRiskTool,
+  getFireRiskSchema,
 } from './tools/index.js';
 import { SMHIClientError } from './smhi-client.js';
 
@@ -149,6 +151,37 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['latitude', 'longitude'],
         },
       },
+      {
+        name: 'get_fire_risk',
+        description:
+          `Get wildfire/forest fire risk forecast (Canadian FWI system) for a location. Returns fire risk class, ` +
+          `underlying fire-behavior indices (FWI, ISI, BUI, FFMC, DMC, DC), grass fire risk, and forest dryness. ` +
+          `Calibrated for Swedish forest and grass fuels. ${COVERAGE_NOTE}`,
+        inputSchema: {
+          type: 'object',
+          properties: {
+            latitude: {
+              type: 'number',
+              description: 'Latitude of the location (-90 to 90)',
+              minimum: -90,
+              maximum: 90,
+            },
+            longitude: {
+              type: 'number',
+              description: 'Longitude of the location (-180 to 180)',
+              minimum: -180,
+              maximum: 180,
+            },
+            period: {
+              type: 'string',
+              enum: ['daily', 'hourly'],
+              description: 'Forecast granularity: "daily" for ~6 days ahead (afternoon fire risk), "hourly" for the next 48 hours',
+              default: 'daily',
+            },
+          },
+          required: ['latitude', 'longitude'],
+        },
+      },
     ],
   };
 });
@@ -186,6 +219,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'get_daily_summary': {
         const input = getDailySummarySchema.parse(args);
         const result = await getDailySummaryTool(input);
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
+      case 'get_fire_risk': {
+        const input = getFireRiskSchema.parse(args);
+        const result = await getFireRiskTool(input);
         return {
           content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
