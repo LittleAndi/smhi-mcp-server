@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/LittleAndi/smhi-mcp-server/compare/v1.1.0...v1.2.0) (2026-08-08)
+
+
+### Features
+
+* add get_weather_warnings tool for active SMHI alerts ([#7](https://github.com/LittleAndi/smhi-mcp-server/issues/7)) ([9e76b3d](https://github.com/LittleAndi/smhi-mcp-server/commit/9e76b3d1ebc362f96471bb705920e13fdebb202f))
+
 ## [1.1.0](https://github.com/LittleAndi/smhi-mcp-server/compare/v1.0.0...v1.1.0) (2026-08-08)
 
 
