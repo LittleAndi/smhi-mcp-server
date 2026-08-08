@@ -1,7 +1,9 @@
 # SMHI MCP Server
 
-[![CI](https://github.com/LittleAndi/smhi-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/LittleAndi/smhi-mcp-server/actions/workflows/ci.yml)
 [![smhi-mcp-server MCP server](https://glama.ai/mcp/servers/LittleAndi/smhi-mcp-server/badges/card.svg)](https://glama.ai/mcp/servers/LittleAndi/smhi-mcp-server)
+
+[![CI](https://github.com/LittleAndi/smhi-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/LittleAndi/smhi-mcp-server/actions/workflows/ci.yml)
+
 
 MCP server for Swedish Meteorological and Hydrological Institute (SMHI) weather data, built on SMHI's current `snow1g` point-forecast API.
 
