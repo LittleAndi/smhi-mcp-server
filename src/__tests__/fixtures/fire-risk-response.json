@@ -1,0 +1,52 @@
+{
+  "approvedTime": "2026-08-08T10:12:47Z",
+  "referenceTime": "2026-08-06T12:00:00Z",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [[18.077074, 59.330787]]
+  },
+  "timeSeries": [
+    {
+      "validTime": "2026-08-07T12:00:00Z",
+      "parameters": [
+        { "name": "fwiindex", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [5.0] },
+        { "name": "fwi", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [23.0] },
+        { "name": "isi", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [6.3] },
+        { "name": "bui", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [99.8] },
+        { "name": "ffmc", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [88.2] },
+        { "name": "dmc", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [64.5] },
+        { "name": "dc", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [549.5] },
+        { "name": "forestdry", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [5.0] },
+        { "name": "t", "levelType": "hl", "level": 2, "unit": "Cel", "values": [19.1] },
+        { "name": "wd", "levelType": "hl", "level": 10, "unit": "degree", "values": [294] },
+        { "name": "ws", "levelType": "hl", "level": 10, "unit": "m/s", "values": [3.6] },
+        { "name": "r", "levelType": "hl", "level": 2, "unit": "percent", "values": [56] },
+        { "name": "grassfire", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [-1.0] },
+        { "name": "rn", "levelType": "hl", "level": 0, "unit": "m min**-1", "values": [0.0] },
+        { "name": "prec1d", "levelType": "hl", "level": 0, "unit": "kg m**-2", "values": [0.0] },
+        { "name": "prec2d", "levelType": "hl", "level": 0, "unit": "kg m**-2", "values": [0.1] }
+      ]
+    },
+    {
+      "validTime": "2026-08-08T12:00:00Z",
+      "parameters": [
+        { "name": "fwiindex", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [6.0] },
+        { "name": "fwi", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [29.4] },
+        { "name": "isi", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [8.1] },
+        { "name": "bui", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [101.2] },
+        { "name": "ffmc", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [90.5] },
+        { "name": "dmc", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [66.0] },
+        { "name": "dc", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [552.0] },
+        { "name": "forestdry", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [6.0] },
+        { "name": "t", "levelType": "hl", "level": 2, "unit": "Cel", "values": [22.4] },
+        { "name": "wd", "levelType": "hl", "level": 10, "unit": "degree", "values": [270] },
+        { "name": "ws", "levelType": "hl", "level": 10, "unit": "m/s", "values": [2.9] },
+        { "name": "r", "levelType": "hl", "level": 2, "unit": "percent", "values": [42] },
+        { "name": "grassfire", "levelType": "hl", "level": 0, "unit": "Numeric", "values": [4.0] },
+        { "name": "rn", "levelType": "hl", "level": 0, "unit": "m min**-1", "values": [8.2] },
+        { "name": "prec1d", "levelType": "hl", "level": 0, "unit": "kg m**-2", "values": [0.0] },
+        { "name": "prec2d", "levelType": "hl", "level": 0, "unit": "kg m**-2", "values": [0.0] }
+      ]
+    }
+  ]
+}

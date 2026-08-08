@@ -3,11 +3,24 @@
  * Fetches meteorological forecast data for locations in Scandinavia
  */
 
-import type { SMHIResponse, SMHITimeSeries, CurrentWeather, HourlyForecast, DailySummary } from './types.js';
+import type {
+  SMHIResponse,
+  SMHITimeSeries,
+  CurrentWeather,
+  HourlyForecast,
+  DailySummary,
+  FWIResponse,
+  FWITimeSeries,
+  FWIParameter,
+  FireRisk,
+  FireRiskPeriod,
+} from './types.js';
 import { getWeatherDescription } from './weather-symbols.js';
+import { getFireRiskClass, getGrassFireClass, getForestDrynessClass } from './fire-risk-classes.js';
 
 const BASE_URL = 'https://opendata-download-metfcst.smhi.se/api';
 const CATEGORY = 'snow1g';
+const FIRE_RISK_CATEGORY = 'fwif1g';
 const VERSION = '1';
 
 export class SMHIClientError extends Error {
@@ -172,4 +185,119 @@ export async function getDailySummary(
   }
 
   return summaries;
+}
+
+/**
+ * Flattens the FWIF1G parameter array (each entry holds a single-element
+ * `values` array for a point request) into a name -> value record.
+ */
+function fwiParamsToRecord(parameters: FWIParameter[]): Record<string, number> {
+  const record: Record<string, number> = {};
+  for (const p of parameters) {
+    record[p.name] = p.values[0];
+  }
+  return record;
+}
+
+/**
+ * Converts a FWIF1G time series entry to FireRisk format.
+ * `grassfire` is present in both periods; `forestdry` is daily-only.
+ */
+function timeSeriesToFireRisk(ts: FWITimeSeries): FireRisk {
+  const p = fwiParamsToRecord(ts.parameters);
+
+  const precipitation: Record<string, number> = {};
+  for (const [key, value] of Object.entries(p)) {
+    if (key.startsWith('prec')) {
+      precipitation[key] = value;
+    }
+  }
+
+  const fireRisk: FireRisk = {
+    validTime: ts.validTime,
+    fireRiskClass: p.fwiindex,
+    fireRiskDescription: getFireRiskClass(p.fwiindex),
+    fwi: p.fwi,
+    isi: p.isi,
+    bui: p.bui,
+    ffmc: p.ffmc,
+    dmc: p.dmc,
+    dc: p.dc,
+    temperature: p.t,
+    windDirection: p.wd,
+    windSpeed: p.ws,
+    humidity: p.r,
+    precipitation,
+  };
+
+  if (p.grassfire !== undefined) {
+    fireRisk.grassFireClass = p.grassfire;
+    fireRisk.grassFireDescription = getGrassFireClass(p.grassfire);
+  }
+
+  if (p.forestdry !== undefined) {
+    fireRisk.forestDrynessClass = p.forestdry;
+    fireRisk.forestDrynessDescription = getForestDrynessClass(p.forestdry);
+  }
+
+  return fireRisk;
+}
+
+/**
+ * Fetches the raw fire weather index forecast from SMHI's FWIF1G API.
+ * `daily` covers ~6 days ahead (afternoon fire risk); `hourly` covers the next 48 hours.
+ */
+export async function fetchFireRisk(
+  latitude: number,
+  longitude: number,
+  period: FireRiskPeriod = 'daily'
+): Promise<FWIResponse> {
+  validateCoordinates(latitude, longitude);
+
+  const lon = longitude.toFixed(6);
+  const lat = latitude.toFixed(6);
+
+  const url = `${BASE_URL}/category/${FIRE_RISK_CATEGORY}/version/${VERSION}/${period}/geotype/point/lon/${lon}/lat/${lat}/data.json`;
+
+  let response: Response;
+  try {
+    response = await fetch(url);
+  } catch (error) {
+    throw new SMHIClientError(
+      `Network error fetching fire risk forecast: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new SMHIClientError(
+        `Location (${latitude}, ${longitude}) is outside SMHI fire risk forecast coverage area. ` +
+        'SMHI covers Sweden, Norway, Finland, Denmark, Estonia, and parts of Latvia/Lithuania.',
+        404
+      );
+    }
+    throw new SMHIClientError(
+      `SMHI API error: ${response.status} ${response.statusText}`,
+      response.status
+    );
+  }
+
+  return response.json() as Promise<FWIResponse>;
+}
+
+/**
+ * Gets the fire weather index forecast with fire/grass/forest-dryness risk classes resolved.
+ */
+export async function getFireRisk(
+  latitude: number,
+  longitude: number,
+  period: FireRiskPeriod = 'daily'
+): Promise<FireRisk[]> {
+  const forecast = await fetchFireRisk(latitude, longitude, period);
+
+  if (!forecast.timeSeries || forecast.timeSeries.length === 0) {
+    throw new SMHIClientError('No fire risk forecast data available');
+  }
+
+  return forecast.timeSeries.map(timeSeriesToFireRisk);
 }

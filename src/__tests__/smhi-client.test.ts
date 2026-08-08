@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchForecast, getCurrentWeather, getHourlyForecast, getDailySummary, SMHIClientError } from '../smhi-client.js';
+import { fetchForecast, getCurrentWeather, getHourlyForecast, getDailySummary, fetchFireRisk, getFireRisk, SMHIClientError } from '../smhi-client.js';
 import forecastFixture from './fixtures/forecast-response.json';
+import fireRiskFixture from './fixtures/fire-risk-response.json';
 
 describe('SMHI Client', () => {
   beforeEach(() => {
@@ -130,6 +131,74 @@ describe('SMHI Client', () => {
       const result = await getDailySummary(59.3293, 18.0686, 2);
 
       expect(result.length).toBeLessThanOrEqual(2);
+    });
+  });
+
+  describe('fetchFireRisk', () => {
+    it('fetches from the fwif1g category with the given period', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(fireRiskFixture),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchFireRisk(59.3293, 18.0686, 'daily');
+
+      expect(result.referenceTime).toBe('2026-08-06T12:00:00Z');
+      expect(result.timeSeries).toHaveLength(2);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('category/fwif1g/version/1/daily/geotype/point/lon/18.068600/lat/59.329300')
+      );
+    });
+
+    it('defaults to the daily period', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(fireRiskFixture),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await fetchFireRisk(59.3293, 18.0686);
+
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/daily/geotype/point/'));
+    });
+
+    it('throws on coordinates outside coverage area', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(fetchFireRisk(40.7128, -74.006)).rejects.toThrow('outside SMHI fire risk forecast coverage area');
+    });
+  });
+
+  describe('getFireRisk', () => {
+    it('resolves fire risk classes and splits out precipitation fields', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(fireRiskFixture),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await getFireRisk(59.3293, 18.0686, 'daily');
+
+      expect(result).toHaveLength(2);
+      expect(result[0].fireRiskClass).toBe(5);
+      expect(result[0].fireRiskDescription).toBe('Very high risk');
+      expect(result[0].fwi).toBe(23.0);
+      expect(result[0].grassFireClass).toBe(-1);
+      expect(result[0].grassFireDescription).toBe('Data missing or outside season');
+      expect(result[0].forestDrynessClass).toBe(5);
+      expect(result[0].forestDrynessDescription).toBe('Very dry');
+      expect(result[0].precipitation).toEqual({ prec1d: 0.0, prec2d: 0.1 });
+
+      expect(result[1].fireRiskClass).toBe(6);
+      expect(result[1].fireRiskDescription).toBe('Extremely high risk');
+      expect(result[1].grassFireClass).toBe(4);
+      expect(result[1].grassFireDescription).toBe('Moderate');
     });
   });
 });

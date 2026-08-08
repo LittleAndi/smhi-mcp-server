@@ -92,3 +92,58 @@ export interface HourlyForecastInput extends CoordinatesInput {
 export interface DailySummaryInput extends CoordinatesInput {
   days?: number;
 }
+
+/**
+ * SMHI FWIF1G Fire Weather Index Forecast types
+ * Endpoint: https://opendata-download-metfcst.smhi.se/api/category/fwif1g/version/1/{daily|hourly}/geotype/point/lon/{lon}/lat/{lat}/data.json
+ */
+export type FireRiskPeriod = 'daily' | 'hourly';
+
+export interface FWIResponse {
+  approvedTime: string;
+  referenceTime: string;
+  geometry: {
+    type: string;
+    coordinates: [number, number][];
+  };
+  timeSeries: FWITimeSeries[];
+}
+
+export interface FWITimeSeries {
+  validTime: string;
+  parameters: FWIParameter[];
+}
+
+export interface FWIParameter {
+  name: string;
+  levelType: string;
+  level: number;
+  unit: string;
+  values: number[];
+}
+
+// Processed fire risk data
+export interface FireRisk {
+  validTime: string;
+  fireRiskClass: number;
+  fireRiskDescription: string;
+  fwi: number;
+  isi: number;
+  bui: number;
+  ffmc: number;
+  dmc: number;
+  dc: number;
+  grassFireClass?: number;
+  grassFireDescription?: string;
+  forestDrynessClass?: number;
+  forestDrynessDescription?: string;
+  temperature: number;
+  windDirection: number;
+  windSpeed: number;
+  humidity: number;
+  precipitation: Record<string, number>;
+}
+
+export interface FireRiskInput extends CoordinatesInput {
+  period?: FireRiskPeriod;
+}
