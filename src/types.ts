@@ -147,3 +147,37 @@ export interface FireRisk {
 export interface FireRiskInput extends CoordinatesInput {
   period?: FireRiskPeriod;
 }
+
+/**
+ * SMHI Radar Open Data types
+ * Endpoint: https://opendata-download-radar.smhi.se/api/version/latest/area/sweden/product/comp.json
+ */
+export interface RadarFileFormat {
+  key: string;
+  updated: string;
+  link: string;
+}
+
+export interface RadarFile {
+  key: string;
+  valid: string;
+  updated: string;
+  formats: RadarFileFormat[];
+}
+
+export interface RadarProductResponse {
+  key: string;
+  updated: string;
+  timeZone: string;
+  lastFiles: RadarFile[];
+}
+
+// Processed radar composite image
+export interface RadarComposite {
+  area: string;
+  product: string;
+  validTime: string;
+  updated: string;
+  mimeType: string;
+  imageBase64: string;
+}

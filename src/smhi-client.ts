@@ -3,6 +3,7 @@
  * Fetches meteorological forecast data for locations in Scandinavia
  */
 
+import { Buffer } from 'node:buffer';
 import type {
   SMHIResponse,
   SMHITimeSeries,
@@ -14,6 +15,8 @@ import type {
   FWIParameter,
   FireRisk,
   FireRiskPeriod,
+  RadarProductResponse,
+  RadarComposite,
 } from './types.js';
 import { getWeatherDescription } from './weather-symbols.js';
 import { getFireRiskClass, getGrassFireClass, getForestDrynessClass } from './fire-risk-classes.js';
@@ -22,6 +25,7 @@ const BASE_URL = 'https://opendata-download-metfcst.smhi.se/api';
 const CATEGORY = 'snow1g';
 const FIRE_RISK_CATEGORY = 'fwif1g';
 const VERSION = '1';
+const RADAR_BASE_URL = 'https://opendata-download-radar.smhi.se/api/version/latest';
 
 export class SMHIClientError extends Error {
   constructor(
@@ -300,4 +304,63 @@ export async function getFireRisk(
   }
 
   return forecast.timeSeries.map(timeSeriesToFireRisk);
+}
+
+/**
+ * Fetches the latest Sweden precipitation radar composite (mosaic of all
+ * Swedish radar stations) as a base64-encoded PNG.
+ */
+export async function fetchRadarComposite(): Promise<RadarComposite> {
+  const metaUrl = `${RADAR_BASE_URL}/area/sweden/product/comp.json`;
+
+  let metaResponse: Response;
+  try {
+    metaResponse = await fetch(metaUrl);
+  } catch (error) {
+    throw new SMHIClientError(
+      `Network error fetching radar metadata: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+
+  if (!metaResponse.ok) {
+    throw new SMHIClientError(
+      `SMHI radar API error: ${metaResponse.status} ${metaResponse.statusText}`,
+      metaResponse.status
+    );
+  }
+
+  const meta = (await metaResponse.json()) as RadarProductResponse;
+  const latest = meta.lastFiles?.find(file => file.formats.some(format => format.key === 'png'));
+  const pngFormat = latest?.formats.find(format => format.key === 'png');
+
+  if (!latest || !pngFormat) {
+    throw new SMHIClientError('No radar composite image currently available');
+  }
+
+  let imageResponse: Response;
+  try {
+    imageResponse = await fetch(pngFormat.link);
+  } catch (error) {
+    throw new SMHIClientError(
+      `Network error fetching radar image: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+
+  if (!imageResponse.ok) {
+    throw new SMHIClientError(
+      `SMHI radar API error: ${imageResponse.status} ${imageResponse.statusText}`,
+      imageResponse.status
+    );
+  }
+
+  const buffer = Buffer.from(await imageResponse.arrayBuffer());
+
+  return {
+    area: 'sweden',
+    product: 'comp',
+    validTime: latest.valid,
+    updated: latest.updated,
+    mimeType: 'image/png',
+    imageBase64: buffer.toString('base64'),
+  };
 }

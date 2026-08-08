@@ -23,6 +23,8 @@ import {
   getDailySummarySchema,
   getFireRiskTool,
   getFireRiskSchema,
+  getRadarImageTool,
+  getRadarImageSchema,
 } from './tools/index.js';
 import { SMHIClientError } from './smhi-client.js';
 
@@ -182,6 +184,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['latitude', 'longitude'],
         },
       },
+      {
+        name: 'get_radar_image',
+        description:
+          'Get the latest Swedish precipitation radar composite (mosaic of all Swedish radar stations), updated ' +
+          'roughly every 5 minutes. Unlike the forecast tools, this shows observed precipitation happening right ' +
+          'now, not a prediction. Returns the image along with its valid time. Coverage: Sweden only.',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+      },
     ],
   };
 });
@@ -229,6 +242,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await getFireRiskTool(input);
         return {
           content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
+      case 'get_radar_image': {
+        const input = getRadarImageSchema.parse(args ?? {});
+        const result = await getRadarImageTool(input);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                { area: result.area, product: result.product, validTime: result.validTime, updated: result.updated },
+                null,
+                2
+              ),
+            },
+            { type: 'image', data: result.imageBase64, mimeType: result.mimeType },
+          ],
         };
       }
 
