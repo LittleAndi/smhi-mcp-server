@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/LittleAndi/smhi-mcp-server/compare/v1.2.0...v1.2.1) (2026-10-25)
+
+
+### Bug Fixes
+
+* **deps:** update dependencies to resolve security advisories ([#15](https://github.com/LittleAndi/smhi-mcp-server/issues/15)) ([8bd5598](https://github.com/LittleAndi/smhi-mcp-server/commit/8bd55989a66d0aa1ffa9e7b8c83e8cb637b47419))
+
 ## [1.2.0](https://github.com/LittleAndi/smhi-mcp-server/compare/v1.1.0...v1.2.0) (2026-08-08)
 
 
