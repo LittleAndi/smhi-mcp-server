@@ -64,9 +64,9 @@ Tool: get_daily_summary
 Input: { "latitude": 57.7089, "longitude": 11.9746, "days": 7 }
 ```
 
-Sample response — asking an MCP client "Will it rain in Gothenburg tomorrow?" calls `get_daily_summary` and answers from the result:
+Sample response — asking an MCP client "Will it rain in Gothenburg tomorrow?" calls `get_hourly_forecast` and answers from the result:
 
-![Sample response: "Will it rain in Gothenburg tomorrow?" answered using get_daily_summary](docs/sample-response.png)
+<img src="docs/sample-response.png" alt="Sample response: Will it rain in Gothenburg tomorrow? answered using get_hourly_forecast" width="320">
 
 ### Check if it will rain in Oslo
 
